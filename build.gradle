@@ -26,5 +26,6 @@ repositories {
 
 dependencies {
 	compile('org.springframework.boot:spring-boot-starter')
+	compile('org.apache.lucene:lucene-analyzers-common:7.2.1')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }
