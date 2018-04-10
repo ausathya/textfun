@@ -2,23 +2,8 @@ package com.sat.textfun;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.TypeTokenFilter;
-import org.apache.lucene.analysis.en.EnglishMinimalStemmer;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util.AttributeFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.stream.Stream;
 
 @SpringBootApplication
 public class TextfunApplication {
@@ -26,19 +11,20 @@ public class TextfunApplication {
 
 	private static Logger logger = LogManager.getLogger(TextfunApplication.class);
 
-	private static final String[] EMPTY_ARRAY = new String[0];
-
-	private static Set<String> stopWordSet = new TreeSet<>();
-
-
-	private Map<String, LongAdder> termCountMap = new TreeMap<>();
-	private String fileName = "";
-
 
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(TextfunApplication.class, args);
-		new HVTAnalyzer("mormon-5rj1te.txt").emitTokens(3);
-		new HVTAnalyzer("keto-3adsan.txt").emitTokens(20);
+		double minTokenCount = 2;
+		double tokenThreshold = 0.0015d;
+		double tfidfThreshold = 0.29d;
+		double ratioToTopTermCount = 0.1d;
+		//new HVTAnalyzer("mormon-5rj1te.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
+		//new HVTAnalyzer("keto-3adsan.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
+		//new HVTAnalyzer("insomniacs-7pyms4.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
+		//new HVTAnalyzer("pikes-peak-50juq6.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
+		//new HVTAnalyzer("doggo-8adxrl.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
+		//new HVTAnalyzer("algernon-book-8ajn87.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
+		new HVTAnalyzer("tolstoy-8a56ci.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
 	}
 
 

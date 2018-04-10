@@ -19,13 +19,16 @@ public class HVTAnalyzer {
 
     private static Logger logger = LogManager.getLogger(HVTAnalyzer.class);
 
-    private static final String[] EMPTY_ARRAY = new String[0];
-
     private static Set<String> stopWordSet = new TreeSet<>();
 
     private Map<String, LongAdder> termCountMap = new TreeMap<>();
 
+    private Map<String, Set<Long>> termDocMap = new TreeMap<>();
+
     private String fileName = "";
+
+    private long tokenCount = 0;
+    private long lineCount = 0;
 
 
     static{
@@ -40,8 +43,7 @@ public class HVTAnalyzer {
         this.fileName = fileName;
     }
 
-    public void emitTokens(long threshold) throws Exception {
-        logger.info("------------------------------------------------");
+    public void emitTokens(double minTokenCount, double tokenThreshold, double tfidfThreshold, double ratioToTopTermCount) throws Exception {
         Stream<String> lines = Util.loadFile(fileName);
         lines.forEach(line -> {
             try {
@@ -50,9 +52,10 @@ public class HVTAnalyzer {
                 e.printStackTrace();
             }
         });
-        //printTokens(1, "ALL Tokens");
-        //printTokens(2, "More than Once");
-        printTokens(threshold, "At-least 20");
+        //computeTokens(1, "ALL Tokens");
+        //computeTokens(2, "More than Once");
+        logger.info("Total number of tokens found: " + tokenCount);
+        computeTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
         lines.close();
         termCountMap.clear();
     }
@@ -63,15 +66,19 @@ public class HVTAnalyzer {
             return ;
 
         line = normalize(line);
+        if(line.length() < 1)
+            return;
+        lineCount++;
         TokenStream tokenStream = tokenize(line);
         tokenStream.reset();
         CharTermAttribute cattr = tokenStream.addAttribute(CharTermAttribute.class);
         while (tokenStream.incrementToken()) {
+            tokenCount ++;
             String token = cattr.toString();
             token = cleanUpToken(token);
             if(!isStopWord(token) && isMinimumLength(token)) {
                 token = stem(token);
-                tokenFound(token);
+                tokenFound(token, lineCount);
             }
         }
         tokenStream.end();
@@ -102,7 +109,7 @@ public class HVTAnalyzer {
         token = token.trim();
         if(token.equalsIgnoreCase("it'"))
             System.out.println("match");
-        if(token.endsWith("'"))
+        if(token.endsWith("'") || token.endsWith("’"))
             token = token.substring(0, token.length()-1);
         return token;
     }
@@ -112,14 +119,6 @@ public class HVTAnalyzer {
             return true;
         else
             return false;
-    }
-
-
-    private String[] tokenizeByWhitespace(String line){
-        if(line  == null)
-            return EMPTY_ARRAY;
-
-        return line.split("\\s+");
     }
 
 
@@ -133,8 +132,12 @@ public class HVTAnalyzer {
         return new TypeTokenFilter(input, stopTypes);
     }
 
-    public void tokenFound(String token) {
+    public void tokenFound(String token, long lineCount) {
         termCountMap.computeIfAbsent(token, (t) -> new LongAdder()).increment();
+        if(!termDocMap.containsKey(token)){
+            termDocMap.put(token, new TreeSet<>());
+        }
+        termDocMap.get(token).add(lineCount);
     }
 
     private static void loadStopWords() throws Exception {
@@ -149,18 +152,88 @@ public class HVTAnalyzer {
     }
 
 
-    protected void printTokens(long threshold, String headerText){
-        logger.info("--------------------------------------");
-        logger.info("				" + headerText + "			   ");
-        logger.info("--------------------------------------");
+    protected Set<HVTToken> computeTokens(double minTokenCount, double tokenThreshold, double tfidfThreshold, double ratioToTopTermCount){
+        double allCountCutoff = tokenCount * tokenThreshold;
+//        logger.info(termCountMap);
+//        logger.info(termDocMap);
+
+        long highestTermCount = 0;
+        for(String term : termCountMap.keySet()){
+            if(termCountMap.get(term).longValue() > highestTermCount){
+                highestTermCount = termCountMap.get(term).longValue();
+            }
+        }
+        logger.info("Highest Term Count Value: " + highestTermCount);
+        final double highestTermThreshold = highestTermCount * ratioToTopTermCount;
+        Set<HVTToken> tokenSet = new TreeSet<>();
         termCountMap.forEach((k,v) ->{
-                    if(v.longValue() >= threshold) {
-                        logger.info(String.format("| %-25s	|	%3s |", k, v));
+                    String term = k;
+                    long termCount = v.longValue();
+                    long docCount = termDocMap.get(k).size();
+                    double idf = Math.log(lineCount/docCount);  // per line basis
+                    double tf  = (double)docCount/termCount;  // for entire file
+                    double tfidf = 1/(tf * idf);
+                    //  && tf > tfidfThreshold
+                    boolean meetsMinCountCutoff = termCount > minTokenCount;
+                    boolean meetsAllCountCutoff = termCount > allCountCutoff;
+                    boolean meetsHighestTermCutoff = termCount > highestTermThreshold;
+                    boolean meetsTfIDFThreshold = tfidf > tfidfThreshold;
+                    if(meetsMinCountCutoff && meetsAllCountCutoff && meetsHighestTermCutoff && meetsTfIDFThreshold) {
+                        tokenSet.add(new HVTToken(term, termCount, docCount, tf, idf, tfidf));
                     }
+
                 }
         );
-        logger.info("--------------------------------------");
-        logger.info("------------------------------------------------");
+        printTokens(tokenSet);
+        return tokenSet;
     }
 
+    protected void printTokens(Set<HVTToken> tokenSet){
+
+        System.out.println("------------------------------------------------------------------");
+        System.out.println(String.format("| %-25s	|	%5s %5s %10s %10s|", "Token", "Count", "TF", "IDF", "tf-idf"));
+        System.out.println("------------------------------------------------------------------");
+
+        tokenSet.forEach((t) ->{
+                System.out.println(String.format("| %-25s	|	%5s %8.4f %8.4f  %8.4f|", t.term, t.termCount, t.tfScore, t.idfScore, t.tfIdfScore));
+            }
+        );
+        System.out.println("------------------------------------------------------------------");
+    }
+
+
+    private static class HVTToken implements Comparable<HVTToken>{
+
+        private String term;
+        private long termCount;
+        private long docCount;
+        private double tfScore;
+        private double idfScore;
+        private double tfIdfScore;
+
+        public HVTToken(String term, long termCount, long docCount, double tfScore, double idfScore, double tfIdfScore) {
+            this.term = term;
+            this.termCount = termCount;
+            this.docCount = docCount;
+            this.tfScore = tfScore;
+            this.idfScore = idfScore;
+            this.tfIdfScore = tfIdfScore;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("| %-18s	|	%5s %5s %8.4f %8.4f  %8.4f|", term, termCount, docCount, tfScore, idfScore, tfIdfScore);
+        }
+
+        @Override
+        public int compareTo(HVTToken that) {
+            if(this.term.equalsIgnoreCase(that.term))
+                return 0;
+
+            if(this.tfIdfScore <= that.tfIdfScore)
+                return 1;
+
+            return -1;
+        }
+    }
 }
