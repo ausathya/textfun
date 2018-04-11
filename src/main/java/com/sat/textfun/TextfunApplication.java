@@ -21,10 +21,10 @@ public class TextfunApplication {
 		//new HVTAnalyzer("mormon-5rj1te.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
 		//new HVTAnalyzer("keto-3adsan.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
 		//new HVTAnalyzer("insomniacs-7pyms4.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
-		//new HVTAnalyzer("pikes-peak-50juq6.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
+		new HVTAnalyzer("pikes-peak-50juq6.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
 		//new HVTAnalyzer("doggo-8adxrl.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
 		//new HVTAnalyzer("algernon-book-8ajn87.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
-		new HVTAnalyzer("tolstoy-8a56ci.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
+		//new HVTAnalyzer("tolstoy-8a56ci.txt").emitTokens(minTokenCount, tokenThreshold, tfidfThreshold, ratioToTopTermCount);
 	}
 
 

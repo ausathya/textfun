@@ -154,8 +154,8 @@ public class HVTAnalyzer {
 
     protected Set<HVTToken> computeTokens(double minTokenCount, double tokenThreshold, double tfidfThreshold, double ratioToTopTermCount){
         double allCountCutoff = tokenCount * tokenThreshold;
-//        logger.info(termCountMap);
-//        logger.info(termDocMap);
+        logger.info(termCountMap);
+        logger.info(termDocMap);
 
         long highestTermCount = 0;
         for(String term : termCountMap.keySet()){
